@@ -1,16 +1,22 @@
-# one_note_clone
+Project structure:
 
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+lib/
+├── main.dart
+├── app.dart
+├── core/
+│   ├── database_provider.dart
+│   ├── database_provider.g.dart (generated)
+│   ├── router.dart
+│   └── theme.dart (optional)
+└── features/
+├── theme/
+│   ├── theme_provider.dart
+│   └── theme_provider.g.dart (generated)
+├── font/
+│   ├── font_provider.dart
+│   └── font_provider.g.dart (generated)
+├── home/
+│   └── home_page.dart
+└── notes/
+├── view_notes_page.dart
+└── create_note_page.dart
