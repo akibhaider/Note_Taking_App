@@ -115,23 +115,6 @@ class _CreateNotePageState extends ConsumerState<CreateNotePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.noteId == null ? 'Create Note' : 'Edit Note'),
-        actions: [
-          if (!_isLoading)
-            IconButton(
-              icon: _isSaving
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-                  : const Icon(Icons.save),
-              onPressed: _isSaving ? null : _saveNote,
-              tooltip: 'Save Note',
-            ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
