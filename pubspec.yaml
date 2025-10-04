@@ -1,0 +1,31 @@
+name: one_note_clone  # Change this line
+description: A Flutter note-taking app with Riverpod and Sembast
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  shared_preferences: ^2.2.2
+  intl: ^0.18.0
+  flutter:
+    sdk: flutter
+
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  go_router: ^14.0.0
+  sembast: ^3.7.1
+  path_provider: ^2.1.2
+  path: ^1.9.0
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.8
+  riverpod_generator: ^2.4.0
+
+flutter:
+  uses-material-design: true
