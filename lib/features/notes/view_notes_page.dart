@@ -106,6 +106,8 @@ class ViewNotesPage extends ConsumerWidget {
   }
 
   Widget _buildNotesList(BuildContext context, List<Note> notes, fontSizeState) {
+    final ref = ProviderScope.containerOf(context).read; // For reading providers in async popup actions
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: notes.length,
@@ -137,10 +139,53 @@ class ViewNotesPage extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Icon(Icons.chevron_right, color: Colors.grey),
+                      // 3-dot menu
+                      PopupMenuButton<String>(
+                        onSelected: (value) async {
+                          if (value == 'delete') {
+                            final shouldDelete = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete Note'),
+                                content: const Text('Are you sure you want to delete this note?'),
+                                actions: [
+                                  TextButton(
+                                    child: const Text('Cancel'),
+                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                  ),
+                                  TextButton(
+                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (shouldDelete == true) {
+                              final notesRepo = await ref(notesRepositoryProvider.future);
+                              await notesRepo.deleteNote(note.id!);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Note deleted'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        itemBuilder: (ctx) => [
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, size: 18, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Delete'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-
                   if (note.content.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -150,7 +195,6 @@ class ViewNotesPage extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-
                   const SizedBox(height: 8),
                   Text(
                     _formatDate(note.updatedAt),
