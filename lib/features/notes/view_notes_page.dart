@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/database_provider.dart';
+import '../../features/theme/theme_provider.dart';
+import '../../features/font/font_provider.dart';
 
 class ViewNotesPage extends ConsumerWidget {
   const ViewNotesPage({super.key});
 
+  static final List<double> fontSizes = [12, 14, 16, 18, 20];
+  String fontLabel(double val) => sizeNameFromValue(val).label;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Placeholder empty list for now
-    final notes = <Map<String, dynamic>>[];
+    final notesAsyncValue = ref.watch(notesListProvider);
+    final isDarkMode = ref.watch(themeProvider);
+    final fontSizeState = ref.watch(fontSizeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -16,124 +23,139 @@ class ViewNotesPage extends ConsumerWidget {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            context.pop();
+          onPressed: () => context.pop(),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            tooltip: isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            onPressed: () {
+              ref.read(themeProvider.notifier).toggleTheme();
+            },
+          ),
+          PopupMenuButton<double>(
+            icon: const Icon(Icons.text_fields),
+            tooltip: 'Font Size',
+            onSelected: (value) {
+              ref.read(fontSizeProvider.notifier).setFontSize(value);
+            },
+            itemBuilder: (context) => [
+              for (final size in fontSizes)
+                PopupMenuItem(
+                  value: size,
+                  child: Text(
+                    fontLabel(size),
+                    style: TextStyle(
+                      fontSize: size,
+                      fontWeight: size == fontSizeState.value ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: notesAsyncValue.when(
+          data: (notes) {
+            if (notes.isEmpty) {
+              return _buildEmptyState(context, fontSizeState);
+            }
+            return _buildNotesList(context, notes, fontSizeState);
           },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, _) => Center(child: Text('Error: $err')),
         ),
       ),
-      body: notes.isEmpty
-          ? _buildEmptyState(context)
-          : _buildNotesList(context, notes),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          context.push('/create-note');
-        },
+        onPressed: () => context.push('/create-note'),
         icon: const Icon(Icons.add),
         label: const Text('New Note'),
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, fontSizeState) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.note_outlined,
-            size: 100,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No notes yet',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.note_outlined, size: 100, color: Colors.grey[400]),
+            const SizedBox(height: 24),
+            Text(
+              'No notes yet',
+              style: TextStyle(
+                fontSize: fontSizeState.value + 4,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Tap the button below to create your first note',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.grey[500],
+            const SizedBox(height: 12),
+            Text(
+              'Tap the button below to create your first note',
+              style: TextStyle(fontSize: fontSizeState.value, color: Colors.grey[500]),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildNotesList(BuildContext context, List<Map<String, dynamic>> notes) {
+  Widget _buildNotesList(BuildContext context, List<Note> notes, fontSizeState) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: notes.length,
       itemBuilder: (context, index) {
         final note = notes[index];
-        final title = note['title'] ?? 'Untitled';
-        final content = note['content'] ?? '';
-        final createdAt = note['createdAt'] ?? '';
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              context.push('/create-note?id=${note['id']}');
-            },
+            onTap: () => context.push('/create-note?id=${note.id}'),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          note.title,
+                          style: TextStyle(
+                            fontSize: fontSizeState.value + 2,
                             fontWeight: FontWeight.bold,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Icon(
-                        Icons.chevron_right,
-                        color: Colors.grey,
-                      ),
+                      const Icon(Icons.chevron_right, color: Colors.grey),
                     ],
                   ),
 
-                  if (content.isNotEmpty) ...[
+                  if (note.content.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    // Content preview
                     Text(
-                      content,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      note.content,
+                      style: TextStyle(fontSize: fontSizeState.value, color: Colors.grey[600]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
 
-                  if (createdAt.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    // Timestamp
-                    Text(
-                      _formatDate(createdAt),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    _formatDate(note.updatedAt),
+                    style: TextStyle(fontSize: fontSizeState.value - 2, color: Colors.grey[500]),
+                  ),
                 ],
               ),
             ),
@@ -143,26 +165,22 @@ class ViewNotesPage extends ConsumerWidget {
     );
   }
 
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      final now = DateTime.now();
-      final difference = now.difference(date);
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
 
-      if (difference.inDays == 0) {
-        if (difference.inHours == 0) {
-          return '${difference.inMinutes} minutes ago';
-        }
-        return '${difference.inHours} hours ago';
-      } else if (difference.inDays == 1) {
-        return 'Yesterday';
-      } else if (difference.inDays < 7) {
-        return '${difference.inDays} days ago';
-      } else {
-        return '${date.day}/${date.month}/${date.year}';
+    if (diff.inDays == 0) {
+      if (diff.inHours == 0) {
+        if (diff.inMinutes == 0) return 'Just now';
+        return '${diff.inMinutes} minute${diff.inMinutes > 1 ? 's' : ''} ago';
       }
-    } catch (e) {
-      return dateStr;
+      return '${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago';
+    } else if (diff.inDays == 1) {
+      return 'Yesterday';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
     }
   }
 }

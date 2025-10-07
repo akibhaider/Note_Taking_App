@@ -11,7 +11,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final isDarkMode = ref.watch(themeProvider);
-    final fontSize = ref.watch(fontSizeProvider);
+    final fontSizeState = ref.watch(fontSizeProvider); // FontSizeState (has .value and .name)
 
     return MaterialApp.router(
       title: 'Notes App',
@@ -20,20 +20,20 @@ class MyApp extends ConsumerWidget {
         brightness: Brightness.light,
         useMaterial3: true,
         textTheme: TextTheme(
-          bodyLarge: TextStyle(fontSize: fontSize),
-          bodyMedium: TextStyle(fontSize: fontSize),
-          titleLarge: TextStyle(fontSize: fontSize + 4),
-          titleMedium: TextStyle(fontSize: fontSize + 2),
+          bodyLarge: TextStyle(fontSize: fontSizeState.value),
+          bodyMedium: TextStyle(fontSize: fontSizeState.value),
+          titleLarge: TextStyle(fontSize: fontSizeState.value + 4),
+          titleMedium: TextStyle(fontSize: fontSizeState.value + 2),
         ),
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
         textTheme: TextTheme(
-          bodyLarge: TextStyle(fontSize: fontSize),
-          bodyMedium: TextStyle(fontSize: fontSize),
-          titleLarge: TextStyle(fontSize: fontSize + 4),
-          titleMedium: TextStyle(fontSize: fontSize + 2),
+          bodyLarge: TextStyle(fontSize: fontSizeState.value),
+          bodyMedium: TextStyle(fontSize: fontSizeState.value),
+          titleLarge: TextStyle(fontSize: fontSizeState.value + 4),
+          titleMedium: TextStyle(fontSize: fontSizeState.value + 2),
         ),
       ),
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
