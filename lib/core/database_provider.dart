@@ -23,7 +23,6 @@ class Note {
     required this.updatedAt,
   });
 
-  // Convert Note to Map for database storage
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -33,7 +32,6 @@ class Note {
     };
   }
 
-  // Create Note from Map
   factory Note.fromMap(Map<String, dynamic> map, String id) {
     return Note(
       id: id,
@@ -44,7 +42,6 @@ class Note {
     );
   }
 
-  // Copy with method for updates
   Note copyWith({
     String? id,
     String? title,
@@ -62,7 +59,7 @@ class Note {
   }
 }
 
-// Database provider
+// Database provider: Asynchronously open Sembast database
 @riverpod
 Future<Database> database(DatabaseRef ref) async {
   final appDir = await getApplicationDocumentsDirectory();
@@ -72,59 +69,53 @@ Future<Database> database(DatabaseRef ref) async {
   return database;
 }
 
-// Store for notes
+// Store reference provider for notes
 final notesStoreProvider = Provider<StoreRef<int, Map<String, dynamic>>>((ref) {
   return intMapStoreFactory.store('notes');
 });
 
-// Notes Repository
+// Notes repository encapsulating DB operations
 class NotesRepository {
   final Database _database;
   final StoreRef<int, Map<String, dynamic>> _store;
 
   NotesRepository(this._database, this._store);
 
-  // Create a new note
   Future<String> createNote(Note note) async {
     final id = await _store.add(_database, note.toMap());
     return id.toString();
   }
 
-  // Get all notes
   Future<List<Note>> getAllNotes() async {
     final snapshots = await _store.find(_database);
     return snapshots.map((snapshot) {
       return Note.fromMap(snapshot.value, snapshot.key.toString());
     }).toList()
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)); // Sort by newest first
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
-  // Get a single note by ID
   Future<Note?> getNoteById(String id) async {
     final snapshot = await _store.record(int.parse(id)).get(_database);
     if (snapshot == null) return null;
     return Note.fromMap(snapshot, id);
   }
 
-  // Update a note
   Future<void> updateNote(Note note) async {
     if (note.id == null) return;
     final updatedNote = note.copyWith(updatedAt: DateTime.now());
     await _store.record(int.parse(note.id!)).put(_database, updatedNote.toMap());
   }
 
-  // Delete a note
   Future<void> deleteNote(String id) async {
     await _store.record(int.parse(id)).delete(_database);
   }
 
-  // Delete all notes
   Future<void> deleteAllNotes() async {
     await _store.delete(_database);
   }
 }
 
-// Notes repository provider
+// Provider to create NotesRepository asynchronously
 @riverpod
 Future<NotesRepository> notesRepository(Ref ref) async {
   final database = await ref.watch(databaseProvider.future);
@@ -132,15 +123,15 @@ Future<NotesRepository> notesRepository(Ref ref) async {
   return NotesRepository(database, store);
 }
 
-// Notes list provider - Stream that watches for changes
+// Stream provider that emits updated notes list periodically
 @riverpod
 Stream<List<Note>> notesList(Ref ref) async* {
   final repository = await ref.watch(notesRepositoryProvider.future);
 
-  // Initial load
+  // Initial yield with current notes list
   yield await repository.getAllNotes();
 
-  // Poll for changes every 500ms
+  // Poll for changes every 500ms (simple approach)
   while (true) {
     await Future.delayed(const Duration(milliseconds: 500));
     yield await repository.getAllNotes();
